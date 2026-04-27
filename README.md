@@ -123,4 +123,4 @@ All thresholds are defined as constants at the top of `caregiver.ino` and can be
 
 ## Why we built this
 
-The main goal was less stress on caretakers — being able to constantly monitor a patient without the back and forth of physically checking in every few minutes. The buttons mean patients can communicate their needs without wasting valuable caretaker time, and the help button covers emergencies. For the patients themselves, it removes the need to strain their voice or move when they shouldn't have to. And the motion/sleep monitoring gives caretakers a real picture of how the patient is actually resting overnight.
+The main goal was less stress on caretakers or even moms, being able to constantly monitor a patient without the back and forth of physically checking in every few minutes. The buttons mean patients can communicate their needs without wasting valuable caretaker time, and the help button covers emergencies. For the patients themselves, it removes the need to strain their voice or move when they shouldn't have to and allow the caretaker a real picture of how the patient is resting overnight.
