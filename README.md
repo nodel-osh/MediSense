@@ -1,118 +1,58 @@
-# MediSense = Wireless Bedside Health Monitor
+# Wireless Bedside Health Monitor
+**EE105 Final Project** — Osher Nodel, Jake Simons, Dana Sanei, Kaitlyn Ooi, Yanet Dereje, Alexander Garcia
 
-EE105 Final Project
+## What is this?
 
-Osher Nodel, Jake Simons, Dana Sanei, Kaitlyn Ooi, Yanet Dereje, Alexander Garcia
+A wireless bedside health monitor using two Arduino Nano 33 BLE Sense Rev1 boards that focuses on temperature, BPM, and humidity to connect a patient with their caretaker without the need of physical checking. One board sits on the patient side and handles all the sensing, and the other sits with the caregiver and receives everything wirelessly over BLE in real time.
 
-## Overview
+The idea came from wanting something low  cost that could work in a hospital or even at home — for parents, caretakers, or anyone looking after someone who needs monitoring. It's built with all sorts of patients in mind: people that run high temperatures when sick, asthma patients, delirium patients who often experience severe sleep disturbances, and people with chronic respiratory conditions like COPD, circulatory issues, arthritis, diabetes, or MS. Extreme temperatures can trigger severe symptoms for a lot of these patients, which is part of why we track humidity and temperature too.
 
-A wireless bedside health monitor built with two **Arduino Nano 33 BLE Sense Rev1** boards that enables real-time patient monitoring without physical check-ins. The system connects a **patient unit** to a **caregiver unit** over Bluetooth Low Energy (BLE), transmitting vital signs, environmental data, motion classification, and patient-initiated button requests.
 
-**Target use cases:**
-- Hospital staff monitoring patients remotely
-- At-home caregivers for elderly, chronically ill, or neurologically impaired patients
-- Monitoring patients with delirium, respiratory conditions, COPD, asthma, MS, arthritis, or diabetes
-- Enabling non-verbal communication for patients with autism, schizophrenia, PTSD, or voice strain
+## Hardware you'll need
 
-## System Architecture
+   2× Arduino Nano 33 BLE Sense Rev1
+   MAX30102 (SpO₂ + heart rate sensor, external breakout)
+   VL53L0X (infrared proximity sensor, Pololu breakout board)
+   HTS221 (built into the Nano — handles temp & humidity)
+   5 push buttons + resistors for the voltage divider network
+
+**Wiring the MAX30102 and VL53L0X** — both connect over I²C:
+   VIN → 3.3V, GND → GND, SDA → A4, SCL → A5
+
+For the VL53L0X specifically, it needs to be placed in a fixed spot relative to the patient — within about 1.2m and within its 25° cone of detection. If the sensor itself moves, the readings will be off, so mount it somewhere stable like a bedside stand aimed at the patient's torso.
+
+   
+
+## Libraries to install
+
+In Arduino IDE Library Manager, install:
 
 ```
-┌─────────────────────────────────┐        BLE         ┌──────────────────────────────┐
-│         PATIENT UNIT            │ ◄────────────────► │       CAREGIVER UNIT         │
-│   Arduino Nano 33 BLE Sense     │                    │  Arduino Nano 33 BLE Sense   │
-│           (Peripheral)          │                    │         (Central)            │
-│                                 │                    │                              │
-│  • HTS221  – Temp & Humidity    │                    │  • Receives all BLE notifs   │
-│  • MAX30102 – SpO₂ & BPM        │                    │  • Displays readings         │
-│  • VL53L0X – Proximity/Motion   │                    │  • Triggers threshold alerts │
-│  • 5 Buttons (Voltage Divider)  │                    │                              │
-└─────────────────────────────────┘                    └──────────────────────────────┘
-```
-
----
-
-## Hardware
-
-### Components
-| Arduino Nano 33 BLE Sense Rev1 (×2) | Main microcontrollers | — |
-| HTS221 | Built-in temperature & humidity sensor | I²C (built-in) |
-| MAX30102 | External SpO₂ & heart rate sensor | I²C |
-| VL53L0X | External time-of-flight proximity sensor | I²C (Pololu breakout board) |
-| 5× Push buttons | Patient communication buttons | Analog (voltage divider) |
-| Resistors | Voltage divider network for buttons | — |
-
-### Wiring Notes
-
-**MAX30102 (SpO₂ / BPM)**
-- VIN → 3.3V
-- GND → GND
-- SDA → A4
-- SCL → A5
-
-**VL53L0X (Proximity)**
-- VIN → 3.3V
-- GND → GND
-- SDA → A4
-- SCL → A5
-- Position the sensor within **~1.2m** of the patient; it has a **25° cone of detection**. Mount it in a fixed location — any movement of the sensor itself will corrupt motion readings.
-
-**Button Voltage Divider Network**
-- All 5 buttons share a single analog input pin
-- Each button is assigned a unique resistor value, producing a unique voltage at the analog pin
-- A pull-down resistor ensures the pin reads 0V when no button is pressed
-- Actual ADC threshold ranges are determined empirically via the Serial Monitor
-
----
-
-## Software
-
-### Libraries Required
-
-Install the following via Arduino IDE Library Manager:
-
 ArduinoBLE
 Arduino_HTS221
 SparkFun MAX3010x Pulse and Proximity Sensor Library
 Pololu VL53L0X
+```
 
+   
 
-### Uploading
+## How to upload
 
-1. Open `patient/patient.ino` in Arduino IDE
-2. Select **Arduino Nano 33 BLE** as the board
-3. Upload to the **patient-side** board
-4. Open `caregiver/caregiver.ino`
-5. Upload to the **caregiver-side** board
-6. Power both boards — the caregiver board will scan and auto-connect
+1. Open `patient/patient.ino`, select Arduino Nano 33 BLE as the board, and upload to the patient  side board
+2. Open `caregiver/caregiver.ino` and upload to the caregiver  side board
+3. Power both — the caregiver board will scan and connect automatically
 
+   
 
-## How It Works
+## How it works
 
-### BLE Communication
+### BLE Connection (Osher Nodel, Dana Sanei)
 
-The **Peripheral (patient)** board advertises a custom BLE service containing the following characteristics:
+To connect the two boards wirelessly, one is configured as a BLE Peripheral (patient unit) and the other as a BLE Central (caregiver unit) using the ArduinoBLE library. The Peripheral board creates and advertises characteristics for temperature, BPM, humidity, buttons, and motion. The Central continuously scans for the Peripheral's advertised service UUID and once it finds it, connects and subscribes to all the characteristics via BLE notifications. After that, sensor and button data transmit in real time from patient to caregiver without any physical wiring.
 
-| `TEMP_CHAR_UUID` | Temperature (°C, float) |
-| `HUMIDITY_CHAR_UUID` | Relative humidity (%, float) |
-| `SPO2_CHAR_UUID` | Blood oxygen saturation (%) |
-| `BPM_CHAR_UUID` | Heart rate (BPM) |
-| `MOTION_CHAR_UUID` | Motion class (0–3 integer) |
-| `BUTTON_CHAR_UUID` | Button state (0–5 integer) |
+### Humidity & Temperature — HTS221
 
-The **Central (caregiver)** board continuously scans for the Peripheral by its advertised service UUID. Once connected, it subscribes to all characteristics via BLE notifications and receives updates in real time without polling.
-
----
-
-### Sensor Details
-
-#### Temperature & Humidity — HTS221 (Built-in)
-
-The HTS221 is the built-in capacitive sensor on the Nano 33 BLE Sense Rev1, accessed via the `Arduino_HTS221` library.
-
-- **Temperature** is read in °C and transmitted to the caregiver board
-- **Humidity** measures the patient's surrounding environment as a percentage
-- Optimal sleeping humidity is generally **40–60%**; readings outside this range trigger an alert on the caregiver unit
-- Critical for patients with COPD, asthma, arthritis, or MS who are highly sensitive to environmental conditions
+The HTS221 is built right into the Nano 33 BLE Sense Rev1, so no extra wiring needed — just the `Arduino_HTS221` library. It reads temperature in °C and relative humidity as a percentage. Humidity in the room is important since many patients are highly sensitive to cold or heat. Optimal sleeping humidity is generally around 40–60%, and readings outside that range trigger an alert on the caregiver unit.
 
 ```cpp
 #include <Arduino_HTS221.h>
@@ -121,16 +61,9 @@ float temperature = HTS.readTemperature();
 float humidity    = HTS.readHumidity();
 ```
 
----
+### Blood Oxygen & Heart Rate — MAX30102 (Yanet Dereje, Kaitlyn Ooi)
 
-#### SpO₂ & Heart Rate — MAX30102
-
-The MAX30102 uses **photoplethysmography (PPG)**: it shines red and infrared LEDs through the skin and measures the variation in light absorption caused by pulsing blood flow.
-
-- **SpO₂** (blood oxygen saturation) is derived from the ratio of red-to-infrared absorption. Normal range: **95–100%**
-- **BPM** (heart rate) is derived from the peak frequency of the PPG waveform
-- Raw sensor data is smoothed using a rolling average to reduce noise before being written to BLE characteristics
-- Alerts are triggered on the caregiver unit if SpO₂ drops below 95% or BPM falls outside a configurable safe range
+The MAX30102 uses photoplethysmography (PPG) — it shines red and infrared LEDs through the skin and measures how much light gets absorbed by the blood. SpO₂ is calculated from the ratio of red  to  infrared absorption (normal range is 95–100%), and BPM comes from the peak frequency of that waveform. Raw data gets smoothed with a rolling average to reduce noise before being sent over BLE. If SpO₂ drops below 95% or BPM goes outside a safe range, the caregiver unit triggers an alert.
 
 ```cpp
 #include <SparkFun_MAX3010x_Sensor_Library.h>
@@ -141,35 +74,15 @@ particleSensor.setup();
 
 long irValue  = particleSensor.getIR();
 long redValue = particleSensor.getRed();
-// Pass to SpO2 and BPM calculation functions
 ```
 
----
+### Proximity & Sleep Monitoring — VL53L0X (Jake Simons)
 
-#### Proximity & Motion Classification — VL53L0X
+The infrared sensor utilizes the VL53L0X IR sensor to detect the sleep of patients to make sure there are no issues while asleep. It's preferred over ultrasonic sensors because its readings aren't affected by humidity fluctuations.
 
-The VL53L0X uses **time-of-flight (ToF)** infrared ranging to measure distance to the nearest object. It is preferred over ultrasonic sensors because its readings are unaffected by humidity fluctuations.
+It outputs 3 parameters: **quiet**, **active**, and **sporadic** movement. Quiet indicates no movement and the patient is soundly asleep. Active indicates light movement or turning, and sporadic indicates violent or sudden movement.
 
-**Motion Statistics (computed per window)**
-
-Each classification window accumulates a series of distance samples. The following statistics are computed:
-
-| Statistic | Purpose |
-|---|---|
-| Average velocity | Mean rate of change between samples |
-| Mean of average velocity | Smoothed trend across window |
-| Standard deviation of velocity | Captures variability / restlessness |
-| Acceleration / jerk | Refines detection of sudden vs. gradual movement |
-
-**3 Motion Classes**
-
-| Class | Integer Value | Description |
-|---|---|---|
-| Quiet | `0` | No movement — patient is soundly asleep |
-| Active | `1` | Light movement or turning — low velocity, low variance |
-| Sporadic | `2` | Violent or sudden movement — high velocity, high variance; potential distress |
-
-The motion class integer is written to the `MOTION_CHAR_UUID` BLE characteristic and transmitted to the caregiver unit. The **Sporadic** class can be configured to trigger an immediate alert on the caregiver unit, which is particularly relevant for delirium patients who may become agitated or physically active at night.
+To figure out which class the patient is in at any given time, the algorithm computes the average velocity, the mean of that average velocity, the standard deviation of the velocity, and acceleration/jerk across a window of distance samples. Sporadic movement triggers an immediate alert on the caregiver unit — this is especially relevant for delirium patients who can become agitated or physically active at night.
 
 ```cpp
 #include <VL53L0X.h>
@@ -183,25 +96,11 @@ uint16_t distance = sensor.readRangeContinuousMillimeters();
 // Feed distance into velocity and std dev computation
 ```
 
-> **Placement note:** The sensor must remain **completely stationary** during use. Any movement of the sensor itself will be interpreted as patient motion and corrupt readings. Ideal mounting is on a fixed bedside stand aimed at the patient's torso, within 1.2m.
+### Buttons — Voltage Divider Network (Alexander Garcia)
 
----
+We implemented 5 buttons, each with a different purpose — labeled (or color coded) as: need water, need restroom, need help, yes, and no. Rather than wiring each button to its own pin, we use a voltage divider network so all 5 can be read from a single analog input. Each button has a unique resistor value that produces a unique voltage at the analog pin. A pull  down resistor ensures the pin reads 0V when nothing is pressed. The actual ADC threshold ranges for each button are determined via the Serial Monitor during setup so there's no overlap between presses.
 
-#### Buttons — Voltage Divider Network
-
-Five buttons allow the patient to communicate needs without speaking or moving significantly.
-
-| Button | Label | BLE Value |
-|---|---|---|
-| 1 | 💧 Need Water | `1` |
-| 2 | 🚻 Need Restroom | `2` |
-| 3 | 🆘 Need Help | `3` |
-| 4 | ✅ Yes | `4` |
-| 5 | ❌ No | `5` |
-
-Each button is wired with a unique resistor value in a voltage divider network, producing a distinct voltage at a single analog pin. ADC threshold ranges for each button are calibrated empirically via the Serial Monitor during setup to prevent overlap between buttons.
-
-When a valid press is detected, the corresponding integer state is written to the `BUTTON_CHAR_UUID` BLE characteristic and immediately transmitted to the caregiver unit.
+Once a valid button press is detected, its corresponding state gets written to a BLE characteristic and sent to the caregiver unit right away.
 
 ```cpp
 int analogVal = analogRead(BUTTON_PIN);
@@ -214,39 +113,22 @@ else if (analogVal < THRESH_5) buttonState = 5; // No
 else                            buttonState = 0; // No press
 ```
 
-This system is especially valuable for patients who cannot or should not speak — including those recovering from illness, or those with neurological conditions such as autism, schizophrenia, or PTSD.
+The buttons are especially useful for patients that can't or shouldn't be straining their voice, or for patients with neurological disorders like autism, schizophrenia, or PTSD who don't speak — it lets them communicate without any issues or strain.
 
----
+   
 
-## Alert Thresholds (Configurable)
+## Alert thresholds
 
-| Measurement | Alert Condition |
-|---|---|
-| Temperature | > 38°C (fever) or < 35°C (hypothermia) |
-| Humidity | < 30% or > 70% |
-| SpO₂ | < 95% |
-| BPM | < 50 or > 120 (configurable) |
-| Motion Class | Sporadic (Class 2) sustained over N windows |
+All thresholds are defined as constants at the top of `caregiver.ino` and can be adjusted per patient. Defaults:
 
-Thresholds are defined as constants at the top of `caregiver.ino` and can be adjusted for individual patient needs.
+   Temperature: alert if > 38°C (fever) or < 35°C (hypothermia)
+   Humidity: alert if < 30% or > 70%
+   SpO₂: alert if < 95%
+   BPM: alert if < 50 or > 120
+   Motion: alert on sustained sporadic movement
 
----
+   
 
-## Goals & Motivation
+## Why we built this
 
-- Reduce caregiver stress by enabling continuous remote monitoring without physical check-ins
-- Low-cost alternative to commercial patient monitoring systems — accessible for home use
-- Supports a wide range of patients: high fevers, asthma, delirium, neurological disorders
-- Enables non-verbal communication for patients who cannot speak or should not strain their voice
-- Real-time motion classification helps detect nighttime distress, wandering, or agitation
-
----
-
-## Team Contributions
-
-| Member | Responsibility |
-|---|---|
-| Osher Nodel, Dana Sanei | BLE communication between both boards |
-| Yanet Dereje, Kaitlyn Ooi | MAX30102 SpO₂/BPM + HTS221 humidity/temperature |
-| Alexander Garcia | Voltage divider button network |
-| Jake Simons | VL53L0X proximity sensor + motion classification algorithm |
+The main goal was less stress on caretakers — being able to constantly monitor a patient without the back and forth of physically checking in every few minutes. The buttons mean patients can communicate their needs without wasting valuable caretaker time, and the help button covers emergencies. For the patients themselves, it removes the need to strain their voice or move when they shouldn't have to. And the motion/sleep monitoring gives caretakers a real picture of how the patient is actually resting overnight.
