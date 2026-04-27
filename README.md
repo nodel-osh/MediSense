@@ -1,14 +1,14 @@
 # Wireless Bedside Health Monitor
 **EE105 Final Project** — Osher Nodel, Jake Simons, Dana Sanei, Kaitlyn Ooi, Yanet Dereje, Alexander Garcia
 
-## What is this?
+## What is MediSense?
 
 A wireless bedside health monitor using two Arduino Nano 33 BLE Sense Rev1 boards that focuses on temperature, BPM, and humidity to connect a patient with their caretaker without the need of physical checking. One board sits on the patient side and handles all the sensing, and the other sits with the caregiver and receives everything wirelessly over BLE in real time.
 
 The idea came from wanting something low  cost that could work in a hospital or even at home — for parents, caretakers, or anyone looking after someone who needs monitoring. It's built with all sorts of patients in mind: people that run high temperatures when sick, asthma patients, delirium patients who often experience severe sleep disturbances, and people with chronic respiratory conditions like COPD, circulatory issues, arthritis, diabetes, or MS. Extreme temperatures can trigger severe symptoms for a lot of these patients, which is part of why we track humidity and temperature too.
 
 
-## Hardware you'll need
+## Hardware we used
 
    2× Arduino Nano 33 BLE Sense Rev1
    VL53L0X (infrared proximity sensor, Pololu breakout board)
