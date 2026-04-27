@@ -11,8 +11,10 @@ The idea came from wanting something low  cost that could work in a hospital or 
 ## Hardware you'll need
 
    2× Arduino Nano 33 BLE Sense Rev1
-   MAX30102 (SpO₂ + heart rate sensor, external breakout)
    VL53L0X (infrared proximity sensor, Pololu breakout board)
+   
+   ### Given Board: 
+   MAX30102 (SpO₂ + heart rate sensor, external breakout)
    HTS221 (built into the Nano — handles temp & humidity)
    5 push buttons + resistors for the voltage divider network
 
@@ -27,20 +29,10 @@ For the VL53L0X specifically, it needs to be placed in a fixed spot relative to 
 
 In Arduino IDE Library Manager, install:
 
-```
 ArduinoBLE
 Arduino_HTS221
 SparkFun MAX3010x Pulse and Proximity Sensor Library
 Pololu VL53L0X
-```
-
-   
-
-## How to upload
-
-1. Open `patient/patient.ino`, select Arduino Nano 33 BLE as the board, and upload to the patient  side board
-2. Open `caregiver/caregiver.ino` and upload to the caregiver  side board
-3. Power both — the caregiver board will scan and connect automatically
 
    
 
@@ -50,7 +42,7 @@ Pololu VL53L0X
 
 To connect the two boards wirelessly, one is configured as a BLE Peripheral (patient unit) and the other as a BLE Central (caregiver unit) using the ArduinoBLE library. The Peripheral board creates and advertises characteristics for temperature, BPM, humidity, buttons, and motion. The Central continuously scans for the Peripheral's advertised service UUID and once it finds it, connects and subscribes to all the characteristics via BLE notifications. After that, sensor and button data transmit in real time from patient to caregiver without any physical wiring.
 
-### Humidity & Temperature — HTS221
+### Humidity & Temperature — HTS221 (Yanet Dereje)
 
 The HTS221 is built right into the Nano 33 BLE Sense Rev1, so no extra wiring needed — just the `Arduino_HTS221` library. It reads temperature in °C and relative humidity as a percentage. Humidity in the room is important since many patients are highly sensitive to cold or heat. Optimal sleeping humidity is generally around 40–60%, and readings outside that range trigger an alert on the caregiver unit.
 
@@ -61,7 +53,7 @@ float temperature = HTS.readTemperature();
 float humidity    = HTS.readHumidity();
 ```
 
-### Blood Oxygen & Heart Rate — MAX30102 (Yanet Dereje, Kaitlyn Ooi)
+### Blood Oxygen & Heart Rate — MAX30102 (Kaitlyn Ooi)
 
 The MAX30102 uses photoplethysmography (PPG) — it shines red and infrared LEDs through the skin and measures how much light gets absorbed by the blood. SpO₂ is calculated from the ratio of red  to  infrared absorption (normal range is 95–100%), and BPM comes from the peak frequency of that waveform. Raw data gets smoothed with a rolling average to reduce noise before being sent over BLE. If SpO₂ drops below 95% or BPM goes outside a safe range, the caregiver unit triggers an alert.
 
