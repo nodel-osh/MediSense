@@ -214,35 +214,57 @@ void handleButtons() {
 
 // -------------------- TEMP/HUM --------------------
 RoomStateTemp getTemp(float temp) {
-  if (temp < 20.0) return TOO_COLD;
-  else if (temp >= 25.0) return TOO_WARM;
-  else return NORMAL_T;
+if (temp < 20.0) return TOO_COLD;
+else if (temp >= 25.0) return TOO_WARM;
+else return NORMAL_T;
 }
 
 
 RoomStateHum getHum(float hum) {
-  if (hum > 60.0) return TOO_HUMID;
-  else if (hum < 30.0) return TOO_DRY;
-  else return NORMAL_H;
+if (hum > 60.0) return TOO_HUMID;
+else if (hum < 30.0) return TOO_DRY;
+else return NORMAL_H;
 }
 
 
 void handleTempHumidity() {
-  if (!hts_ok) return;
+if (!hts_ok) return;
 
 
-  if (millis() - lastTHRead < TH_INTERVAL) return;
-  lastTHRead = millis();
+if (millis() - lastTHRead < TH_INTERVAL) return;
+lastTHRead = millis();
 
 
-  currentTemp = HTS.readTemperature();
-  currentHum  = HTS.readHumidity();
+currentTemp = HTS.readTemperature();
+currentHum = HTS.readHumidity();
 
 
-  Serial.print("Temperature (°C) = ");
-  Serial.print(currentTemp);
-  Serial.print(" | Humidity (%) = ");
-  Serial.println(currentHum);
+// NEW: get states
+RoomStateTemp tempState = getTemp(currentTemp);
+RoomStateHum humState = getHum(currentHum);
+
+
+Serial.print("Temperature (°C) = ");
+Serial.print(currentTemp);
+Serial.print(" | ");
+
+
+if (tempState == TOO_COLD) Serial.print("Too Cold");
+else if (tempState == TOO_WARM) Serial.print("Too Warm");
+else Serial.print("Normal");
+
+
+Serial.print(" | Humidity (%) = ");
+Serial.print(currentHum);
+Serial.print(" | ");
+
+
+if (humState == TOO_HUMID) Serial.print("Too Humid");
+else if (humState == TOO_DRY) Serial.print("Too Dry");
+else Serial.print("Normal");
+
+
+Serial.println();
 }
 
 
@@ -709,5 +731,4 @@ void loop() {
     Serial.print("Movement state: ");
     Serial.println(stableLabel);
   }
-}
 
