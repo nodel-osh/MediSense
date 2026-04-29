@@ -52,21 +52,66 @@ The HTS221 is built right into the Nano 33 BLE Sense Rev1, so no extra wiring ne
 float temperature = HTS.readTemperature();
 float humidity    = HTS.readHumidity();
 ```
+### Blood Oximeter Sensor — MAX30102 (Kaitlyn Ooi)
+The MAX30102 sensor measures blood oxygen saturation (SpO₂) and heart rate using photoplethysmography (PPG). It works by emitting red and infrared light into the skin and measuring how much light is absorbed by the blood. Since oxygenated and deoxygenated blood absorb light differently, the ratio of red to infrared signals can be used to estimate SpO₂, while periodic changes in the signal correspond to heart rate (BPM).
 
-### Blood Oxygen & Heart Rate — MAX30102 (Kaitlyn Ooi)
+This implementation is designed to be reliable in real-world use by structuring the logic as a state machine, ensuring that readings are only taken when the signal is stable and valid. The system continuously checks whether the sensor is ready before processing new data:
+```cpp
+if (!particleSensor.available()) {
+  particleSensor.check();
+  return;
+}
+```
+The first stage of the system is finger detection, where the IR signal is used to determine whether a finger is properly placed on the sensor. If the signal is too low, no finger is present; if it is too high, the signal is saturated. A valid reading only begins when the signal falls within a defined range:
+```cpp
+if (currentIR >= IR_THRESHOLD && currentIR < IR_SATURATION) {
+  particleSensor.clearFIFO();
+  fingerDetectedTime = millis();
+  settling = true;
+}
+```
+Once a finger is detected, the system enters a settling phase, where it waits for a short period (1.5 seconds) to allow the signal to stabilize. This is important because initial readings are often noisy due to motion or inconsistent contact. If the finger is removed during this phase, the system resets and waits again.
 
-The MAX30102 uses photoplethysmography (PPG) — it shines red and infrared LEDs through the skin and measures how much light gets absorbed by the blood. SpO₂ is calculated from the ratio of red  to  infrared absorption (normal range is 95–100%), and BPM comes from the peak frequency of that waveform. Raw data gets smoothed with a rolling average to reduce noise before being sent over BLE. If SpO₂ drops below 95% or BPM goes outside a safe range, the caregiver unit triggers an alert.
+After stabilization, the system transitions into the data collection phase, where it gathers 100 samples of both red and infrared values. These samples are stored in buffers and used for signal processing:
+```cpp
+redBuffer[spo2FillIdx] = currentRed;
+irBuffer[spo2FillIdx] = currentIR;
+spo2FillIdx++;
+```
+During this phase, the system continuously validates the signal. If the finger is removed or the signal becomes saturated, the process is aborted and restarted. This ensures that only high-quality data is used for calculation.
+
+Once enough samples are collected, the data is processed using Maxim’s built-in algorithm:
+```cpp
+maxim_heart_rate_and_oxygen_saturation(
+  irBuffer,
+  SPO2_BUF_LEN,
+  redBuffer,
+  &spo2,
+  &spo2Valid,
+  &heartRate,
+  &hrValid
+);
+```
+This function analyzes the waveform to compute both SpO₂ and heart rate, along with validity flags indicating whether the results are reliable.
+
+The results are then validated before being accepted. SpO₂ must fall within 0–100%, and heart rate must be within a realistic physiological range (30–220 BPM). Invalid readings are discarded to prevent false data from being used:
 
 ```cpp
-#include <SparkFun_MAX3010x_Sensor_Library.h>
-
-MAX30105 particleSensor;
-particleSensor.begin(Wire, I2C_SPEED_FAST);
-particleSensor.setup();
-
-long irValue  = particleSensor.getIR();
-long redValue = particleSensor.getRed();
+if (spo2Valid && spo2 > 0 && spo2 <= 100) {
+  currentSpo2 = spo2;
+} else {
+  currentSpo2 = -1;
+}
 ```
+
+Finally, valid readings are transmitted via Bluetooth Low Energy (BLE) to an external device:
+```cpp
+spo2Char.writeValue(currentSpo2);
+hrChar.writeValue(currentHR);
+```
+After completing a reading, the system enters a reset phase where it waits for the user to remove their finger before allowing another measurement. This prevents repeated or stale readings and ensures that each measurement cycle is intentional.
+
+Overall, this implementation focuses on accuracy, reliability, and user interaction, handling real-world issues such as noise, motion, and improper sensor use. By combining signal validation, buffered sampling, and algorithmic processing, the system converts raw optical data into meaningful health metrics suitable for monitoring applications.
 
 ### Proximity & Sleep Monitoring — VL53L0X (Jake Simons)
 
