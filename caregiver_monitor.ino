@@ -132,11 +132,23 @@ void loop() {
 
   Serial.print("Temperature: ");
   Serial.print(temp);
-  Serial.println(" °C");
+  Serial.print(" °C | ");
+
+  if (temp < 20.0) Serial.print("Too Cold");
+  else if (temp >= 25.0) Serial.print("Too Warm");
+  else Serial.print("Normal");
+
+  Serial.println();
 
   Serial.print("Humidity: ");
   Serial.print(hum);
-  Serial.println(" %");
+  Serial.print(" % | ");
+
+  if (hum > 60.0) Serial.print("Too Humid");
+  else if (hum < 30.0) Serial.print("Too Dry");
+  else Serial.print("Normal");
+
+  Serial.println();
 
   Serial.print("Movement: ");
   Serial.println(movementState(state));
