@@ -222,7 +222,7 @@ else return NORMAL_T;
 
 RoomStateHum getHum(float hum) {
 if (hum > 60.0) return TOO_HUMID;
-else if (hum < 30.0) return TOO_DRY;
+else if (hum < 20.0) return TOO_DRY;
 else return NORMAL_H;
 }
 
