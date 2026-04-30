@@ -3,15 +3,15 @@
 
 ## What is MediSense?
 
-A wireless bedside health monitor using two Arduino Nano 33 BLE Sense Rev1 boards that focuses on temperature, BPM, and humidity to connect a patient with their caretaker without the need of physical checking. One board sits on the patient side and handles all the sensing, and the other sits with the caregiver and receives everything wirelessly over BLE in real time.
+A wireless bedside health monitor using two Arduino Nano 33 BLE Sense Rev1 boards that focuses on temperature, BPM, humidity, voltage divider buttons (to understand patients needs), and a movement rtracker to connect a patient with their caretaker without the need of physical checking. One board sits on the patient side and handles all the sensing, and the other sits with the caregiver and receives everything wirelessly over BLE in real time.
 
 The idea came from wanting something low  cost that could work in a hospital or even at home — for parents, caretakers, or anyone looking after someone who needs monitoring. It's built with all sorts of patients in mind: people that run high temperatures when sick, asthma patients, delirium patients who often experience severe sleep disturbances, and people with chronic respiratory conditions like COPD, circulatory issues, arthritis, diabetes, or MS. Extreme temperatures can trigger severe symptoms for a lot of these patients, which is part of why we track humidity and temperature too.
 
 
 ## Hardware we used
 
-   2× Arduino Nano 33 BLE Sense Rev1
-   VL53L0X (infrared proximity sensor, Pololu breakout board)
+   2× Arduino Nano 33 BLE Sense Rev1 (Patient + CAretaker)
+   VL53L0X (infrared proximity sensor)
    
    ### Given Board: 
    MAX30102 (SpO₂ + heart rate sensor, external breakout)
@@ -135,7 +135,7 @@ uint16_t distance = sensor.readRangeContinuousMillimeters();
 
 ### Buttons — Voltage Divider Network (Alexander Garcia)
 
-We implemented 5 buttons, each with a different purpose — labeled (or color coded) as: need water, need restroom, need help, yes, and no. Rather than wiring each button to its own pin, we use a voltage divider network so all 5 can be read from a single analog input. Each button has a unique resistor value that produces a unique voltage at the analog pin. A pull  down resistor ensures the pin reads 0V when nothing is pressed. The actual ADC threshold ranges for each button are determined via the Serial Monitor during setup so there's no overlap between presses.
+We implemented 5 buttons, each with a different purpose — (future device will be labeled or color coded for easy use) as: need water, need restroom, need help, yes, and no. Rather than wiring each button to its own pin, we use a voltage divider network so all 5 can be read from a single analog input. Each button has a unique resistor value that produces a unique voltage at the analog pin. A pull down resistor ensures the pin reads 0V when nothing is pressed. The actual ADC threshold ranges for each button are determined via the Serial Monitor during setup so there's no overlap between presses.
 
 Once a valid button press is detected, its corresponding state gets written to a BLE characteristic and sent to the caregiver unit right away.
 
@@ -168,4 +168,4 @@ All thresholds are defined as constants at the top of `caregiver.ino` and can be
 
 ## Why we built this
 
-The main goal was less stress on caretakers or even moms, being able to constantly monitor a patient without the back and forth of physically checking in every few minutes. The buttons mean patients can communicate their needs without wasting valuable caretaker time, and the help button covers emergencies. For the patients themselves, it removes the need to strain their voice or move when they shouldn't have to and allow the caretaker a real picture of how the patient is resting overnight.
+The main goal was less stress on caretakers or even moms, being able to constantly monitor a patient without the back and forth of physically checking in every few minutes. The buttons mean patients can communicate their needs without wasting valuable caretaker time, and the help button covers emergencies. For the patients themselves, it removes the need to strain their voice or move when they shouldn't have to and allow the caretaker a real picture of how the patient is resting overnight. Emergencies happen in hospitals all the time, thus making nurses run aroudn the hospotal but if there was a way to prevent it or mitigate it as much as possible that is the goal, and that is why MediSense was created. 
