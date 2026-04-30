@@ -145,7 +145,7 @@ void loop() {
   Serial.print(" % | ");
 
   if (hum > 60.0) Serial.print("Too Humid");
-  else if (hum < 30.0) Serial.print("Too Dry");
+  else if (hum < 20.0) Serial.print("Too Dry");
   else Serial.print("Normal");
 
   Serial.println();
